@@ -39,9 +39,6 @@
             color: var(--accent-color);
             margin-bottom: 25px;
         }
-        .form-group {
-            margin-bottom: 15px;
-        }
         input[type="text"] {
             width: 100%;
             padding: 14px;
@@ -52,11 +49,9 @@
             color: #fff;
             font-size: 1.1rem;
             text-align: center;
+            margin-bottom: 15px;
         }
-        input:focus {
-            outline: none;
-            border-color: var(--accent-color);
-        }
+        input:focus { outline: none; border-color: var(--accent-color); }
         button {
             width: 100%;
             padding: 14px;
@@ -68,14 +63,12 @@
             font-weight: bold;
             cursor: pointer;
         }
-        button:hover {
-            background: linear-gradient(to right, #56c7ff, #228ad3);
-        }
+        button:hover { background: linear-gradient(to right, #56c7ff, #228ad3); }
         .status-box {
             padding: 15px;
             border-radius: 4px;
             margin-top: 20px;
-            text-align: center;
+            text-align: left;
             font-weight: bold;
             background-color: #4c1c1c; 
             border: 1px solid #8e2c2c; 
@@ -85,7 +78,6 @@
             background-color: #101c2c; 
             border: 1px solid var(--border-color); 
             color: var(--text-color); 
-            text-align: left; 
             font-size: 0.9rem; 
             font-weight: normal; 
             line-height: 1.5;
@@ -104,7 +96,19 @@
             max-height: 250px; overflow-y: auto; background: #0b1118; padding: 12px; border-radius: 4px;
             line-height: 1.4;
         }
-        .loader { text-align: center; color: var(--accent-color); display: none; margin-top: 15px; font-weight: bold; }
+        .loader { 
+            text-align: left; 
+            color: var(--accent-color); 
+            display: none; 
+            margin-top: 15px; 
+            font-family: monospace;
+            background: #0e141d;
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            font-size: 0.85rem;
+            white-space: pre-line;
+        }
         h2.history-header { border-bottom: 1px solid var(--border-color); padding-bottom: 5px; color: #fff; margin-top: 25px; }
     </style>
 </head>
@@ -114,39 +118,75 @@
     <h1>Steam Patch History</h1>
     <div class="subtitle">Enter any game name to view its update history wall</div>
 
-    <div class="form-group">
-        <input type="text" id="gameName" placeholder="e.g., Terraria or Elden Ring" autocomplete="off">
-    </div>
-
+    <input type="text" id="gameName" placeholder="e.g., Terraria or Elden Ring" autocomplete="off">
     <button onclick="fetchPatches()">View All Patches</button>
 
-    <div id="loader" class="loader">Searching Steam directory...</div>
+    <div id="loader" class="loader"></div>
     <div id="result"></div>
 </div>
 
 <script>
-// Logic Failover Handler: Tries primary proxy network, switches to secondary if blocked
-async function requestCORS(url) {
-    // Pipeline 1: CORSProxy.io (High-speed direct proxy)
+function logStatus(message, isError = false) {
+    const loader = document.getElementById('loader');
+    const color = isError ? '#ff9999' : '#66c0f4';
+    loader.innerHTML += `<span style="color: ${color}">${message}</span>\n`;
+}
+
+// Custom Fetch with a strict 5-second cutoff threshold to prevent lingering freezes
+async function fetchWithTimeout(url, timeout = 5000) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(id);
+    return response;
+}
+
+// Master Request router that cycles through 3 unique network wrappers
+async function fetchFromProxies(targetUrl) {
+    // Pipeline Option 1: CORSProxy.io
     try {
-        const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
-        if (res.ok) return await res.json();
+        logStatus(`⚡ Pipeline 1: Connecting via corsproxy.io...`);
+        const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
+        if (res.ok) {
+            const data = await res.json();
+            logStatus(`✅ Pipeline 1 Success.`);
+            return data;
+        }
+        logStatus(`❌ Pipeline 1 status error: ${res.status}`);
     } catch (e) {
-        console.warn("Primary CORS proxy offline or blocked. Engaging secondary backup layer...");
+        logStatus(`❌ Pipeline 1 failed or timed out.`);
     }
 
-    // Pipeline 2: AllOrigins (String-wrapped structural backup)
+    // Pipeline Option 2: CodeTabs Proxy
     try {
-        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+        logStatus(`⚡ Pipeline 2: Redirecting via codetabs.com...`);
+        const res = await fetchWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`);
+        if (res.ok) {
+            const data = await res.json();
+            logStatus(`✅ Pipeline 2 Success.`);
+            return data;
+        }
+        logStatus(`❌ Pipeline 2 status error: ${res.status}`);
+    } catch (e) {
+        logStatus(`❌ Pipeline 2 failed or timed out.`);
+    }
+
+    // Pipeline Option 3: AllOrigins Wrapped Proxy Stringifier
+    try {
+        logStatus(`⚡ Pipeline 3: Querying via allorigins.win...`);
+        const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
         if (res.ok) {
             const wrapper = await res.json();
-            return JSON.parse(wrapper.contents);
+            const data = JSON.parse(wrapper.contents);
+            logStatus(`✅ Pipeline 3 Success.`);
+            return data;
         }
+        logStatus(`❌ Pipeline 3 status error: ${res.status}`);
     } catch (e) {
-        console.error("Secondary backup pipeline failed.");
+        logStatus(`❌ Pipeline 3 failed or timed out.`);
     }
 
-    throw new Error("All public data transmission pathways are currently blocked by your local network layout.");
+    throw new Error("All global data proxy pathways rejected the connection requests.");
 }
 
 async function fetchPatches() {
@@ -160,51 +200,50 @@ async function fetchPatches() {
     }
 
     resultDiv.innerHTML = '';
+    loader.innerHTML = '';
     loader.style.display = 'block';
-    loader.innerText = `Searching for "${gameNameInput}"...`;
+    
+    logStatus(`🔍 Starting search operations for: "${gameNameInput}"`);
 
     try {
-        // Step 1: Query Steam database search through the failover proxy handler
         const searchUrl = `https://steamcommunity.com/actions/SearchApps/${encodeURIComponent(gameNameInput)}`;
-        const matches = await requestCORS(searchUrl);
+        const matches = await fetchFromProxies(searchUrl);
 
-        if (!matches || matches.length === 0) {
-            resultDiv.innerHTML = `<div class="status-box">No games matched "${gameNameInput}". Check your spelling and try again.</div>`;
+        if (!matches || matches.length === 0 || !Array.isArray(matches)) {
+            resultDiv.innerHTML = `<div class="status-box">No explicit game titles matched "${gameNameInput}" inside the Steam directory database.</div>`;
             return;
         }
 
         const bestMatch = matches[0];
         const appId = bestMatch.id;
         document.getElementById('gameName').value = bestMatch.name; 
-
-        loader.innerText = `Found "${bestMatch.name}". Downloading changelogs...`;
-
-        // Step 2: Extract historical patch notes logs
-        let newsData;
-        try {
-            newsData = await requestCORS(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appId}&count=40&tags=patchnotes`);
-        } catch (e) {
-            // Safe fallback if the specific tag endpoint rejects the call
-            newsData = null;
-        }
         
+        logStatus(`🎯 Matched target title: "${bestMatch.name}" (ID: ${appId})`);
+        logStatus(`📥 Fetching patch log histories...`);
+
+        let newsData = null;
+        try {
+            newsData = await fetchFromProxies(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appId}&count=30&tags=patchnotes`);
+        } catch(e) {
+            logStatus(`⚠️ Specific patch tags call rejected. Attempting broad feed request fallback...`);
+        }
+
         let newsItems = newsData?.appnews?.newsitems;
 
         if (!newsItems || newsItems.length === 0) {
-            newsData = await requestCORS(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appId}&count=40`);
+            newsData = await fetchFromProxies(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appId}&count=30`);
             newsItems = newsData?.appnews?.newsitems;
         }
 
         if (!newsItems || newsItems.length === 0) {
             resultDiv.innerHTML = `
                 <div class="status-box info-box">
-                    <strong>Empty Feed:</strong> "${bestMatch.name}" was found, but the developers do not post their text changelogs directly to Steam's built-in community news network.
+                    <strong>Empty System Feed:</strong> "${bestMatch.name}" was successfully verified, but the game developers do not broadcast text announcements into Steam's community RSS hub structure.
                 </div>
             `;
             return;
         }
 
-        // Step 3: Parse BBCode layout markers and build display grid
         let htmlOutput = `<h2 class="history-header">Changelog Feed for ${bestMatch.name}</h2>`;
         
         newsItems.forEach(item => {
@@ -230,18 +269,17 @@ async function fetchPatches() {
         });
 
         resultDiv.innerHTML = htmlOutput;
+        loader.style.display = 'none'; // Clear system log block if compile finishes smoothly
 
     } catch (err) {
-        console.error(err);
+        logStatus(`🚨 CRITICAL EXCEPTION: ${err.message}`, true);
         resultDiv.innerHTML = `
-            <div class="status-box">Network Access Terminated</div>
+            <div class="status-box">Network Handshake Refused</div>
             <div class="status-box info-box" style="margin-top:10px;">
-                <strong>🚨 Why is this happening?</strong><br>
-                Both global data proxies (`corsproxy.io` and `allorigins.win`) are failing to handle the request. This means your local web browser router configurations or ISP firewalls are actively dropping requests to open cross-origin proxies. 
+                <strong>Why did this drop?</strong><br>
+                Look closely at the live diagnostics log window above. If all three alternative pipelines throw a failure/timeout message, your browser configuration, router firewall, or ISP routing infrastructure is aggressively blocking third-party cross-origin resource sharing proxies.
             </div>
         `;
-    } finally {
-        loader.style.display = 'none';
     }
 }
 </script>
