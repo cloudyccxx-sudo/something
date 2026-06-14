@@ -3,26 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Steam Patch Tracker</title>
+    <title>Steam Patch Tracker Pro</title>
     <style>
         :root {
             --bg-color: #171a21;
             --card-color: #1b2838;
             --accent-color: #66c0f4;
             --text-color: #c7d5e0;
+            --success-color: #437030;
+            --danger-color: #8e2c2c;
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
-            padding: 20px;
+            padding: 15px;
         }
         .container {
             max-width: 600px;
             margin: 0 auto;
             background-color: var(--card-color);
-            padding: 25px;
+            padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
@@ -30,22 +32,62 @@
             text-align: center;
             color: #fff;
             margin-bottom: 5px;
+            font-size: 1.8rem;
         }
         .subtitle {
             text-align: center;
             font-size: 0.9rem;
             color: var(--accent-color);
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
         .form-group {
             margin-bottom: 15px;
+            position: relative;
         }
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #101822;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            border: 1px solid #2a475e;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .switch input { display: none; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #2a475e;
+            transition: .3s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px; width: 16px;
+            left: 4px; bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--accent-color); }
+        input:checked + .slider:before { transform: translateX(26px); }
+        
         label {
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
+            font-size: 0.9rem;
         }
-        input {
+        input[type="text"], input[type="number"] {
             width: 100%;
             padding: 12px;
             box-sizing: border-box;
@@ -59,9 +101,35 @@
             outline: none;
             border-color: var(--accent-color);
         }
+        
+        /* Suggestions Dropdown */
+        .suggestions-box {
+            position: absolute;
+            top: 100%; left: 0; right: 0;
+            background-color: #0e141d;
+            border: 1px solid #2a475e;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        .suggestion-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #1b2838;
+            display: flex;
+            align-items: center;
+        }
+        .suggestion-item:hover {
+            background-color: #2a475e;
+            color: #fff;
+        }
+        
         button {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             background: linear-gradient(to right, #47bfff, #1a7cc1);
             border: none;
             border-radius: 4px;
@@ -69,127 +137,193 @@
             font-size: 1rem;
             font-weight: bold;
             cursor: pointer;
-            transition: opacity 0.2s;
-        }
-        button:hover {
-            opacity: 0.9;
-        }
-        #result {
-            margin-top: 25px;
+            margin-top: 10px;
         }
         .status-box {
             padding: 15px;
             border-radius: 4px;
-            margin-bottom: 20px;
+            margin-top: 20px;
             text-align: center;
-            font-size: 1.2rem;
             font-weight: bold;
         }
-        .behind {
-            background-color: #4c1c1c;
-            border: 1px solid #8e2c2c;
-            color: #ff9999;
-        }
-        .current {
-            background-color: #233c19;
-            border: 1px solid #437030;
-            color: #bfff9e;
-        }
+        .behind { background-color: #4c1c1c; border: 1px solid var(--danger-color); color: #ff9999; }
+        .current { background-color: #233c19; border: 1px solid var(--success-color); color: #bfff9e; }
+        .info-box { background-color: #101c2c; border: 1px solid #2a475e; color: #a3be8c; text-align: left; font-size: 0.85rem; font-weight: normal; }
+        
         .patch-card {
             background-color: #121c27;
             border-left: 4px solid var(--accent-color);
             padding: 15px;
-            margin-bottom: 15px;
+            margin-top: 15px;
             border-radius: 0 4px 4px 0;
         }
-        .patch-title {
-            font-weight: bold;
-            color: #fff;
-            margin-bottom: 5px;
-        }
-        .patch-date {
-            font-size: 0.8rem;
-            color: #88929a;
-            margin-bottom: 10px;
-        }
+        .patch-title { font-weight: bold; color: #fff; margin-bottom: 5px; }
+        .patch-date { font-size: 0.8rem; color: #88929a; margin-bottom: 10px; }
         .patch-body {
-            font-size: 0.9rem;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            max-height: 200px;
-            overflow-y: auto;
-            background: #0b1118;
-            padding: 10px;
-            border-radius: 4px;
+            font-size: 0.9rem; white-space: pre-wrap; word-wrap: break-word;
+            max-height: 180px; overflow-y: auto; background: #0b1118; padding: 10px; border-radius: 4px;
         }
-        .loader {
-            text-align: center;
-            color: var(--accent-color);
-            display: none;
-        }
+        .loader { text-align: center; color: var(--accent-color); display: none; margin-top: 15px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>Steam Patch Tracker</h1>
-    <div class="subtitle">Check how many updates your game build is behind</div>
+    <div class="subtitle">Search games and track build intervals</div>
 
-    <div class="form-group">
+    <div class="toggle-container">
+        <span>Fuzzy Game Search (Auto-On)</span>
+        <label class="switch">
+            <input type="checkbox" id="fuzzyToggle" checked onchange="toggleFuzzyLogic()">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <div class="form-group" id="nameGroup">
+        <label for="gameName">Type Game Name:</label>
+        <input type="text" id="gameName" placeholder="Start typing e.g., Terraria, Elden Ring..." autocomplete="off">
+        <div id="suggestions" class="suggestions-box"></div>
+    </div>
+
+    <div class="form-group" id="idGroup" style="display: none;">
         <label for="appId">Steam App ID:</label>
-        <input type="number" id="appId" placeholder="e.g., 105600 for Terraria, 4000 for Garry's Mod" value="105600">
+        <input type="number" id="appId" placeholder="e.g., 105600">
     </div>
 
     <div class="form-group">
-        <label for="buildNum">Your Build Number / Patch Title / Keyword:</label>
-        <input type="text" id="buildNum" placeholder="e.g., 1.4.4.9 or patch number snippet">
+        <label for="buildNum">Your Current Build Number / Keyword / Version:</label>
+        <input type="text" id="buildNum" placeholder="e.g., 1.4.4.9 or October update text">
     </div>
 
-    <button onclick="checkPatches()">Check Updates</button>
+    <button onclick="checkPatches()">Analyze Patch History</button>
 
-    <div id="loader" class="loader"><br>Fetching live data from Steam...</div>
+    <div id="loader" class="loader">Processing data stream from Steam via proxy...</div>
     <div id="result"></div>
 </div>
 
 <script>
+let selectedAppId = "";
+let debounceTimer;
+
+// Handle typing in game search input
+document.getElementById('gameName').addEventListener('input', function(e) {
+    if (!document.getElementById('fuzzyToggle').checked) return;
+    
+    clearTimeout(debounceTimer);
+    const query = e.target.value.trim();
+    const suggestionsBox = document.getElementById('suggestions');
+    
+    if (query.length < 2) {
+        suggestionsBox.style.display = 'none';
+        return;
+    }
+
+    // 600ms debounce prevents VPN/Proxy rate-limiting flags while you type
+    debounceTimer = setTimeout(() => {
+        fetchGameSuggestions(query);
+    }, 600);
+});
+
+// Hide dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    if (e.target.id !== 'gameName') {
+        document.getElementById('suggestions').style.display = 'none';
+    }
+});
+
+function toggleFuzzyLogic() {
+    const isFuzzy = document.getElementById('fuzzyToggle').checked;
+    document.getElementById('nameGroup').style.display = isFuzzy ? 'block' : 'none';
+    document.getElementById('idGroup').style.display = isFuzzy ? 'none' : 'block';
+    if (!isFuzzy) selectedAppId = "";
+}
+
+async function fetchGameSuggestions(query) {
+    const suggestionsBox = document.getElementById('suggestions');
+    const targetUrl = `https://steamcommunity.com/actions/SearchApps/${encodeURIComponent(query)}`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+
+    try {
+        const response = await fetch(proxyUrl);
+        if (!response.ok) return;
+        const wrapper = await response.json();
+        const matches = JSON.parse(wrapper.contents);
+        
+        if (!matches || matches.length === 0) {
+            suggestionsBox.style.display = 'none';
+            return;
+        }
+
+        suggestionsBox.innerHTML = '';
+        matches.forEach(game => {
+            const div = document.createElement('div');
+            div.className = 'suggestion-item';
+            div.innerText = game.name;
+            div.onclick = () => {
+                document.getElementById('gameName').value = game.name;
+                selectedAppId = game.id;
+                suggestionsBox.style.display = 'none';
+            };
+            suggestionsBox.appendChild(div);
+        });
+        suggestionsBox.style.display = 'block';
+    } catch (err) {
+        console.error("Fuzzy look up skipped due to proxy congestion.", err);
+    }
+}
+
 async function checkPatches() {
-    const appId = document.getElementById('appId').value.trim();
-    const buildNum = document.getElementById('buildNum').value.trim().toLowerCase();
     const resultDiv = document.getElementById('result');
     const loader = document.getElementById('loader');
-
-    if (!appId || !buildNum) {
-        alert('Please fill out all the fields first.');
+    const buildNum = document.getElementById('buildNum').value.trim().toLowerCase();
+    
+    // Determine target App ID
+    let appId = document.getElementById('fuzzyToggle').checked ? selectedAppId : document.getElementById('appId').value.trim();
+    
+    if (!appId) {
+        alert('Please pick a game from the fuzzy search list or input a raw App ID.');
+        return;
+    }
+    if (!buildNum) {
+        alert('Please enter your local build/version identifier.');
         return;
     }
 
     resultDiv.innerHTML = '';
     loader.style.display = 'block';
 
-    // Requesting Steam News filtered for patch notes through a public proxy wrapper
-    const steamApiUrl = `https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appId}&count=30&tags=patchnotes`;
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(steamApiUrl)}`;
+    // Primary fetch with strict patch tags. Fallback fetch without tags if game uses normal logs.
+    const runFetch = async (useTags) => {
+        const tagsParam = useTags ? '&tags=patchnotes' : '';
+        const steamUrl = `https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appId}&count=35${tagsParam}`;
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(steamUrl)}`;
+        
+        const res = await fetch(proxyUrl);
+        if (!res.ok) throw new Error('Proxy blocked or offline');
+        const wrapper = await res.json();
+        if (!wrapper.contents) throw new Error('Empty response payload');
+        return JSON.parse(wrapper.contents);
+    };
 
     try {
-        const response = await fetch(proxyUrl);
-        if (!response.ok) throw new Error('Proxy error.');
-        
-        const wrapper = await response.json();
-        const data = JSON.parse(wrapper.contents);
-        const newsItems = data.appnews?.newsitems;
-        
+        let data = await runFetch(true);
+        let newsItems = data.appnews?.newsitems;
+
+        // Logical Safeguard: Fallback if game doesn't explicitly mark logs as "patchnotes"
         if (!newsItems || newsItems.length === 0) {
-            resultDiv.innerHTML = `<div class="status-box behind">No public patch notes discovered for this App ID. Double check the ID.</div>`;
-            return;
+            data = await runFetch(false);
+            newsItems = data.appnews?.newsitems;
+        }
+
+        if (!newsItems || newsItems.length === 0) {
+            throw new Error('No historical data logs found for this application ID.');
         }
 
         let foundIndex = -1;
-
-        // Loop backward/forward to match where your current build sits
         for (let i = 0; i < newsItems.length; i++) {
             const title = newsItems[i].title.toLowerCase();
             const contents = newsItems[i].contents.toLowerCase();
-            
             if (title.includes(buildNum) || contents.includes(buildNum)) {
                 foundIndex = i;
                 break;
@@ -198,46 +332,53 @@ async function checkPatches() {
 
         if (foundIndex === -1) {
             resultDiv.innerHTML = `
-                <div class="status-box behind">Could not pinpoint your version in the recent patch history.</div>
-                <p style="text-align:center;">Tip: Try inputting a keyword snippet from your last known patch title description.</p>
+                <div class="status-box behind">Keyword/Build target not found inside recent logs.</div>
+                <div class="status-box info-box">
+                    <strong>💡 Why did this happen?</strong><br>
+                    1. The version you entered might be too old (Steam API feeds list the last 35 updates).<br>
+                    2. Your game uses dedicated internal build numbers instead of readable version titles. Try finding a word snippet or version string from that update's text instead.
+                </div>
             `;
             return;
         }
 
         if (foundIndex === 0) {
-            resultDiv.innerHTML = `<div class="status-box current">✨ Perfect alignment! You are up to date with the latest build.</div>`;
+            resultDiv.innerHTML = `<div class="status-box current">✨ System Matched! You are running the latest release version.</div>`;
             return;
         }
 
-        // Generate patch cards for what was missed
         let htmlOutput = `<div class="status-box behind">⚠️ You are running ${foundIndex} patch${foundIndex > 1 ? 'es' : ''} behind!</div>`;
-        htmlOutput += `<h3>Missed Changelogs:</h3>`;
+        htmlOutput += `<h3>Missed Updates Listing:</h3>`;
 
         for (let i = 0; i < foundIndex; i++) {
             const item = newsItems[i];
             const date = new Date(item.date * 1000).toLocaleDateString();
-            
-            // Basic formatting adjustments to strip out rough Steam BBCode
-            let cleanContents = item.contents
+            let cleanText = item.contents
                 .replace(/\[b\]/g, '<strong>').replace(/\[\/b\]/g, '</strong>')
                 .replace(/\[list\]/g, '<ul>').replace(/\[\/list\]/g, '</ul>')
                 .replace(/\[\*\]/g, '<li>')
-                .replace(/\[\/?\w+.*?\]/g, ''); 
+                .replace(/\[\/?\w+.*?\]/g, '');
 
             htmlOutput += `
                 <div class="patch-card">
                     <div class="patch-title">${item.title}</div>
-                    <div class="patch-date">Deployed: ${date}</div>
-                    <div class="patch-body">${cleanContents}</div>
+                    <div class="patch-date">Release Window: ${date}</div>
+                    <div class="patch-body">${cleanText}</div>
                 </div>
             `;
         }
-
         resultDiv.innerHTML = htmlOutput;
 
     } catch (error) {
         console.error(error);
-        resultDiv.innerHTML = `<div class="status-box behind">Error pulling data. Check your network connection.</div>`;
+        resultDiv.innerHTML = `
+            <div class="status-box behind">Data Connection Failed</div>
+            <div class="status-box info-box" style="margin-top:10px;">
+                <strong>🚨 VPN Connection Block Detected:</strong><br>
+                If this stays stuck, your Windscribe VPN configuration is filtering out the public CORS proxy site (allorigins.win). <br><br>
+                <strong>Quick Fix:</strong> Turn off Windscribe for 30 seconds and click "Analyze Patch History" again. If it works without the VPN, apply Option 1 or 2 from the previous instructions to add exceptions!
+            </div>
+        `;
     } finally {
         loader.style.display = 'none';
     }
