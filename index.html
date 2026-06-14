@@ -1,80 +1,128 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="kawaii">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Steam Patch History Viewer ✧ Kawaii Edition</title>
+    <title>Steam Patch History Viewer - Theme Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Pangolin&family=Patrick+Hand&display=swap" rel="stylesheet">
     <style>
-        :root {
-            /* Kawaii Palette ✧ Purple Themed */
-            --kawaii-main-bg: #f8f4ff; /* Pale soft purple */
-            --kawaii-lavender: #d1b1f8; /* Soft pastel purple */
-            --kawaii-violet: #9b51e0; /* Playful primary purple */
-            --kawaii-border: #c4ace8; /* Light purple border */
-            --kawaii-dark-text: #5f3e7e; /* Dark, soft purple-brown */
-            --kawaii-pink: #ffadd2; /* Soft pink accent */
-            --kawaii-success: #c48eff; /* Light success purple */
-            --kawaii-danger: #e07070; /* Soft danger/error */
-            --kawaii-overlay: #ffffff90; /* White overlay with alpha */
+        /* Theme Architecture Configurations */
+        html[data-theme="kawaii"] {
+            --bg-main: #f8f4ff;
+            --bg-gradient: linear-gradient(135deg, #f8f4ff 25%, #f2ebff 25%, #f2ebff 50%, #f8f4ff 50%, #f8f4ff 75%, #f2ebff 75%, #f2ebff 100%);
+            --bg-size: 56.57px 56.57px;
+            --container-bg: rgba(255, 255, 255, 0.9);
+            --border-color: #c4ace8;
+            --violet-accent: #9b51e0;
+            --lavender-sub: #d1b1f8;
+            --text-main: #5f3e7e;
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --patch-body-bg: rgba(209, 177, 248, 0.1);
+            --loader-bg: #2a1c4c;
+            --loader-text: #d1b1f8;
+            --loader-border: #9b51e0;
+            --danger-bg: rgba(224, 112, 112, 0.15);
+            --danger-text: #e07070;
+            --shadow-color: rgba(182, 110, 239, 0.2);
         }
+
+        html[data-theme="lilith"] {
+            --bg-main: #0b0712;
+            --bg-gradient: linear-gradient(135deg, #0b0712 25%, #140d21 25%, #140d21 50%, #0b0712 50%, #0b0712 75%, #140d21 75%, #140d21 100%);
+            --bg-size: 40px 40px;
+            --container-bg: rgba(18, 11, 28, 0.95);
+            --border-color: #ff2a6d;
+            --violet-accent: #ff2a6d; /* Neon Crimson */
+            --lavender-sub: #8a2be2; /* Deep Neon Violet */
+            --text-main: #e2daf0;
+            --card-bg: rgba(28, 18, 43, 0.9);
+            --patch-body-bg: rgba(11, 7, 18, 0.6);
+            --loader-bg: #09050f;
+            --loader-text: #ff2a6d;
+            --loader-border: #8a2be2;
+            --danger-bg: rgba(255, 42, 109, 0.1);
+            --danger-text: #ff2a6d;
+            --shadow-color: rgba(255, 42, 109, 0.3);
+        }
+
         body {
             font-family: 'Patrick Hand', cursive;
-            background-color: var(--kawaii-main-bg);
-            background-image: linear-gradient(135deg, #f8f4ff 25%, #f2ebff 25%, #f2ebff 50%, #f8f4ff 50%, #f8f4ff 75%, #f2ebff 75%, #f2ebff 100%);
-            background-size: 56.57px 56.57px;
-            color: var(--kawaii-dark-text);
+            background-color: var(--bg-main);
+            background-image: var(--bg-gradient);
+            background-size: var(--bg-size);
+            color: var(--text-main);
             margin: 0;
             padding: 20px;
+            transition: background 0.3s ease;
         }
         .container {
             max-width: 600px;
             margin: 0 auto;
-            background-color: var(--kawaii-overlay);
+            background-color: var(--container-bg);
             padding: 30px;
             border-radius: 25px;
-            box-shadow: 0 8px 25px rgba(182, 110, 239, 0.2);
-            border: 4px solid var(--kawaii-border);
+            box-shadow: 0 8px 25px var(--shadow-color);
+            border: 4px solid var(--border-color);
+            position: relative;
+            transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
         }
+        
+        /* Vector Settings Button Layout Anchor */
+        .settings-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            fill: var(--violet-accent);
+            transition: transform 0.4s ease, fill 0.3s ease;
+        }
+        .settings-btn:hover {
+            transform: rotate(90deg);
+        }
+
         h1, h2, h3 {
             font-family: 'Pangolin', cursive;
             text-align: center;
-            color: var(--kawaii-violet);
+            color: var(--violet-accent);
             margin-top: 0;
-            text-shadow: 1px 1px 1px #fff, -1px -1px 1px #fff;
+            text-shadow: 1px 1px 1px rgba(255,255,255,0.5);
+            transition: color 0.3s;
         }
-        h1 { font-size: 2.2rem; }
+        h1 { font-size: 2.2rem; padding-right: 40px; }
         .subtitle {
             text-align: center;
             font-size: 1.1rem;
-            color: var(--kawaii-lavender);
+            color: var(--lavender-sub);
             margin-bottom: 25px;
             font-weight: bold;
+            transition: color 0.3s;
         }
         input[type="text"] {
             width: 100%;
             padding: 16px;
             box-sizing: border-box;
-            background-color: #fff;
-            border: 3px solid var(--kawaii-border);
+            background-color: var(--card-bg);
+            border: 3px solid var(--border-color);
             border-radius: 15px;
-            color: var(--kawaii-dark-text);
+            color: var(--text-main);
             font-size: 1.1rem;
             text-align: center;
             margin-bottom: 20px;
             font-family: 'Patrick Hand', cursive;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.3s, color 0.3s;
         }
         input:focus {
             outline: none;
-            border-color: var(--kawaii-violet);
-            box-shadow: 0 0 10px var(--kawaii-lavender);
+            border-color: var(--violet-accent);
+            box-shadow: 0 0 10px var(--lavender-sub);
         }
-        button {
+        .search-btn {
             width: 100%;
             padding: 16px;
-            background: linear-gradient(135deg, var(--kawaii-lavender), var(--kawaii-violet));
-            border: 3px solid var(--kawaii-violet);
+            background: linear-gradient(135deg, var(--lavender-sub), var(--violet-accent));
+            border: 3px solid var(--violet-accent);
             border-radius: 15px;
             color: white;
             font-size: 1.2rem;
@@ -82,59 +130,57 @@
             cursor: pointer;
             font-family: 'Pangolin', cursive;
             text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
-            box-shadow: 0 4px 10px rgba(182, 110, 239, 0.2);
-            transition: transform 0.1s, box-shadow 0.2s;
+            box-shadow: 0 4px 10px var(--shadow-color);
+            transition: transform 0.1s, box-shadow 0.2s, border-color 0.3s;
         }
-        button:hover {
-            box-shadow: 0 6px 15px rgba(182, 110, 239, 0.3);
+        .search-btn:hover {
+            box-shadow: 0 6px 15px var(--shadow-color);
             transform: translateY(-2px);
         }
-        button:active {
-            transform: translateY(1px);
-        }
+        .search-btn:active { transform: translateY(1px); }
+        
         .status-box {
             padding: 18px;
             border-radius: 15px;
             margin-top: 25px;
             text-align: left;
             font-weight: bold;
-            background-color: rgba(224, 112, 112, 0.15); 
-            border: 3px solid var(--kawaii-danger); 
-            color: var(--kawaii-danger);
+            background-color: var(--danger-bg); 
+            border: 3px solid var(--border-color); 
+            color: var(--danger-text);
             font-family: 'Pangolin', cursive;
         }
         .info-box { 
-            background-color: rgba(209, 177, 248, 0.2); 
-            border: 3px solid var(--kawaii-lavender); 
-            color: var(--kawaii-dark-text); 
+            background-color: var(--patch-body-bg); 
+            border: 3px solid var(--lavender-sub); 
+            color: var(--text-main); 
             font-size: 1rem; 
             font-weight: normal; 
             line-height: 1.5;
             font-family: 'Patrick Hand', cursive;
         }
         .patch-card {
-            background-color: rgba(255, 255, 255, 0.8);
-            border-left: 6px solid var(--kawaii-violet);
+            background-color: var(--card-bg);
+            border-left: 6px solid var(--violet-accent);
             padding: 18px;
             margin-top: 20px;
             border-radius: 10px 20px 20px 10px;
-            box-shadow: 0 4px 10px rgba(182, 110, 239, 0.1);
-            transition: transform 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            transition: transform 0.2s, background-color 0.3s;
         }
         .patch-card:hover {
             transform: scale(1.02);
-            background-color: #fff;
         }
         .patch-title {
             font-family: 'Pangolin', cursive;
             font-weight: bold;
-            color: var(--kawaii-violet);
+            color: var(--violet-accent);
             margin-bottom: 5px;
             font-size: 1.2rem;
         }
         .patch-meta {
             font-size: 0.9rem;
-            color: var(--kawaii-lavender);
+            color: var(--lavender-sub);
             margin-bottom: 12px;
             font-weight: bold;
         }
@@ -144,52 +190,145 @@
             word-wrap: break-word;
             max-height: 250px;
             overflow-y: auto;
-            background: rgba(209, 177, 248, 0.1);
+            background: var(--patch-body-bg);
             padding: 14px;
             border-radius: 10px;
             line-height: 1.4;
-            color: var(--kawaii-dark-text);
+            color: var(--text-main);
         }
         .loader { 
             text-align: left; 
-            color: var(--kawaii-lavender); 
+            color: var(--loader-text); 
             display: none; 
             margin-top: 20px; 
             font-family: monospace;
-            background: #2a1c4c;
+            background: var(--loader-bg);
             padding: 14px;
             border-radius: 10px;
-            border: 3px solid var(--kawaii-violet);
+            border: 3px solid var(--loader-border);
             font-size: 0.9rem;
             white-space: pre-line;
             box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
         }
         h2.history-header {
-            border-bottom: 3px dashed var(--kawaii-lavender);
+            border-bottom: 3px dashed var(--lavender-sub);
             padding-bottom: 10px;
-            color: var(--kawaii-violet);
+            color: var(--violet-accent);
             margin-top: 30px;
             margin-bottom: 15px;
+        }
+
+        /* Centered Overlay Window Management CSS */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+        }
+        .modal-window {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--container-bg);
+            border: 4px solid var(--border-color);
+            border-radius: 20px;
+            padding: 25px;
+            width: 280px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            text-align: center;
+        }
+        .theme-option-btn {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            font-family: 'Pangolin', cursive;
+            font-size: 1.1rem;
+            border: 3px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            font-weight: bold;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .theme-option-btn:hover {
+            background-color: var(--lavender-sub);
+            color: white;
+            transform: scale(1.03);
+        }
+        .close-modal-btn {
+            margin-top: 15px;
+            background: none;
+            border: none;
+            color: var(--violet-accent);
+            font-family: 'Patrick Hand', cursive;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <svg class="settings-btn" viewBox="0 0 24 24" onclick="toggleSettings(true)" aria-label="Settings Menu">
+        <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+    </svg>
+
     <h1>Steam Patch History</h1>
     <div class="subtitle">Enter any game name to view its update history wall</div>
 
     <input type="text" id="gameName" placeholder="e.g., Terraria or Elden Ring" autocomplete="off">
-    <button onclick="fetchPatches()">View All Patches</button>
+    <button class="search-btn" onclick="fetchPatches()">View All Patches</button>
 
     <div id="loader" class="loader"></div>
     <div id="result"></div>
 </div>
 
+<div id="settingsBackdrop" class="modal-backdrop" onclick="toggleSettings(false)">
+    <div class="modal-window" onclick="event.stopPropagation()">
+        <h3>Select Theme Profile</h3>
+        <button class="theme-option-btn" onclick="applyTheme('kawaii')">Kawaii Purple</button>
+        <button class="theme-option-btn" onclick="applyTheme('lilith')">Lilith Gothic</button>
+        <br>
+        <button class="close-modal-btn" onclick="toggleSettings(false)">Close Panel</button>
+    </div>
+</div>
+
 <script>
+// Handle local persistence of user configuration profiles smoothly on boot
+const savedTheme = localStorage.getItem('steam-watcher-theme') || 'kawaii';
+document.documentElement.setAttribute('data-theme', savedTheme);
+
+function toggleSettings(open) {
+    document.getElementById('settingsBackdrop').style.display = open ? 'block' : 'none';
+}
+
+function applyTheme(themeName) {
+    document.documentElement.setAttribute('data-theme', themeName);
+    localStorage.setItem('steam-watcher-theme', themeName);
+    toggleSettings(false);
+}
+
 function logStatus(message, isError = false) {
     const loader = document.getElementById('loader');
-    const color = isError ? '#ffadd2' : '#d1b1f8'; 
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    
+    let color = '#d1b1f8'; 
+    if (isError) {
+        color = '#ffadd2'; 
+    } else if (currentTheme === 'lilith') {
+        color = '#ff2a6d'; 
+    }
+    
     loader.innerHTML += `<span style="color: ${color}">${message}</span>\n`;
 }
 
@@ -202,7 +341,6 @@ async function fetchWithTimeout(url, timeout = 5000) {
 }
 
 async function fetchFromProxies(targetUrl) {
-    // Pipeline Option 1: CORSProxy.io
     try {
         logStatus(`[CONNECT] Pipeline 1: Connecting via corsproxy.io...`);
         const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
@@ -216,7 +354,6 @@ async function fetchFromProxies(targetUrl) {
         logStatus(`[ERR] Pipeline 1 failed or timed out.`);
     }
 
-    // Pipeline Option 2: CodeTabs Proxy
     try {
         logStatus(`[CONNECT] Pipeline 2: Redirecting via codetabs.com...`);
         const res = await fetchWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`);
@@ -230,7 +367,6 @@ async function fetchFromProxies(targetUrl) {
         logStatus(`[ERR] Pipeline 2 failed or timed out.`);
     }
 
-    // Pipeline Option 3: AllOrigins Wrapped Proxy Stringifier
     try {
         logStatus(`[CONNECT] Pipeline 3: Querying via allorigins.win...`);
         const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
@@ -312,8 +448,6 @@ async function fetchPatches() {
         
         newsItems.forEach(item => {
             const date = new Date(item.date * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-            
-            // Generate a unique, stable build tracking identifier extracted logically from the patch metadata index
             const buildNum = item.gid ? item.gid.toString().substring(4, 11) : Math.floor(1100000 + (item.date % 8000000));
 
             let cleanBody = item.contents
@@ -329,7 +463,7 @@ async function fetchPatches() {
             htmlOutput += `
                 <div class="patch-card">
                     <div class="patch-title">${item.title}</div>
-                    <div class="patch-meta">Posted on: ${date} ✧ Build: #${buildNum}</div>
+                    <div class="patch-meta">Posted on: ${date} | Build: #${buildNum}</div>
                     <div class="patch-body">${cleanBody}</div>
                 </div>
             `;
