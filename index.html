@@ -102,7 +102,6 @@
             border-color: var(--accent-color);
         }
         
-        /* Suggestions Dropdown */
         .suggestions-box {
             position: absolute;
             top: 100%; left: 0; right: 0;
@@ -119,8 +118,6 @@
             padding: 10px;
             cursor: pointer;
             border-bottom: 1px solid #1b2838;
-            display: flex;
-            align-items: center;
         }
         .suggestion-item:hover {
             background-color: #2a475e;
@@ -148,7 +145,7 @@
         }
         .behind { background-color: #4c1c1c; border: 1px solid var(--danger-color); color: #ff9999; }
         .current { background-color: #233c19; border: 1px solid var(--success-color); color: #bfff9e; }
-        .info-box { background-color: #101c2c; border: 1px solid #2a475e; color: #a3be8c; text-align: left; font-size: 0.85rem; font-weight: normal; }
+        .info-box { background-color: #101c2c; border: 1px solid #2a475e; color: #c7d5e0; text-align: left; font-size: 0.85rem; font-weight: normal; }
         
         .patch-card {
             background-color: #121c27;
@@ -163,7 +160,7 @@
             font-size: 0.9rem; white-space: pre-wrap; word-wrap: break-word;
             max-height: 180px; overflow-y: auto; background: #0b1118; padding: 10px; border-radius: 4px;
         }
-        .loader { text-align: center; color: var(--accent-color); display: none; margin-top: 15px; }
+        .loader { text-align: center; color: var(--accent-color); display: none; margin-top: 15px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -182,23 +179,23 @@
 
     <div class="form-group" id="nameGroup">
         <label for="gameName">Type Game Name:</label>
-        <input type="text" id="gameName" placeholder="Start typing e.g., Terraria, Elden Ring..." autocomplete="off">
+        <input type="text" id="gameName" placeholder="e.g., The NOexistenceN of you AND me" autocomplete="off">
         <div id="suggestions" class="suggestions-box"></div>
     </div>
 
     <div class="form-group" id="idGroup" style="display: none;">
         <label for="appId">Steam App ID:</label>
-        <input type="number" id="appId" placeholder="e.g., 105600">
+        <input type="number" id="appId" placeholder="e.g., 2873080">
     </div>
 
     <div class="form-group">
         <label for="buildNum">Your Current Build Number / Keyword / Version:</label>
-        <input type="text" id="buildNum" placeholder="e.g., 1.4.4.9 or October update text">
+        <input type="text" id="buildNum" placeholder="e.g., 1.0 or release version snippet">
     </div>
 
     <button onclick="checkPatches()">Analyze Patch History</button>
 
-    <div id="loader" class="loader">Processing data stream from Steam via proxy...</div>
+    <div id="loader" class="loader">Connecting to Steam...</div>
     <div id="result"></div>
 </div>
 
@@ -206,7 +203,6 @@
 let selectedAppId = "";
 let debounceTimer;
 
-// Handle typing in game search input
 document.getElementById('gameName').addEventListener('input', function(e) {
     if (!document.getElementById('fuzzyToggle').checked) return;
     
@@ -219,13 +215,11 @@ document.getElementById('gameName').addEventListener('input', function(e) {
         return;
     }
 
-    // 600ms debounce prevents VPN/Proxy rate-limiting flags while you type
     debounceTimer = setTimeout(() => {
-        fetchGameSuggestions(query);
-    }, 600);
+        fetchGameSuggestions(query, false);
+    }, 500);
 });
 
-// Hide dropdown when clicking outside
 document.addEventListener('click', function(e) {
     if (e.target.id !== 'gameName') {
         document.getElementById('suggestions').style.display = 'none';
@@ -239,37 +233,38 @@ function toggleFuzzyLogic() {
     if (!isFuzzy) selectedAppId = "";
 }
 
-async function fetchGameSuggestions(query) {
-    const suggestionsBox = document.getElementById('suggestions');
+async function fetchGameSuggestions(query, isFinalSubmit) {
     const targetUrl = `https://steamcommunity.com/actions/SearchApps/${encodeURIComponent(query)}`;
     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
 
     try {
         const response = await fetch(proxyUrl);
-        if (!response.ok) return;
+        if (!response.ok) return null;
         const wrapper = await response.json();
         const matches = JSON.parse(wrapper.contents);
         
-        if (!matches || matches.length === 0) {
-            suggestionsBox.style.display = 'none';
-            return;
-        }
+        if (!matches || matches.length === 0) return null;
 
-        suggestionsBox.innerHTML = '';
-        matches.forEach(game => {
-            const div = document.createElement('div');
-            div.className = 'suggestion-item';
-            div.innerText = game.name;
-            div.onclick = () => {
-                document.getElementById('gameName').value = game.name;
-                selectedAppId = game.id;
-                suggestionsBox.style.display = 'none';
-            };
-            suggestionsBox.appendChild(div);
-        });
-        suggestionsBox.style.display = 'block';
+        if (!isFinalSubmit) {
+            const suggestionsBox = document.getElementById('suggestions');
+            suggestionsBox.innerHTML = '';
+            matches.forEach(game => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.innerText = game.name;
+                div.onclick = () => {
+                    document.getElementById('gameName').value = game.name;
+                    selectedAppId = game.id;
+                    suggestionsBox.style.display = 'none';
+                };
+                suggestionsBox.appendChild(div);
+            });
+            suggestionsBox.style.display = 'block';
+        }
+        return matches;
     } catch (err) {
-        console.error("Fuzzy look up skipped due to proxy congestion.", err);
+        console.error(err);
+        return null;
     }
 }
 
@@ -277,14 +272,9 @@ async function checkPatches() {
     const resultDiv = document.getElementById('result');
     const loader = document.getElementById('loader');
     const buildNum = document.getElementById('buildNum').value.trim().toLowerCase();
+    const gameNameInput = document.getElementById('gameName').value.trim();
+    const isFuzzy = document.getElementById('fuzzyToggle').checked;
     
-    // Determine target App ID
-    let appId = document.getElementById('fuzzyToggle').checked ? selectedAppId : document.getElementById('appId').value.trim();
-    
-    if (!appId) {
-        alert('Please pick a game from the fuzzy search list or input a raw App ID.');
-        return;
-    }
     if (!buildNum) {
         alert('Please enter your local build/version identifier.');
         return;
@@ -292,17 +282,46 @@ async function checkPatches() {
 
     resultDiv.innerHTML = '';
     loader.style.display = 'block';
+    loader.innerText = "Finding closest matching title on Steam...";
 
-    // Primary fetch with strict patch tags. Fallback fetch without tags if game uses normal logs.
+    let appId = isFuzzy ? selectedAppId : document.getElementById('appId').value.trim();
+
+    // AUTO MATCH SYSTEM: If user typed text but didn't pick anything from a list
+    if (isFuzzy && !appId) {
+        if (!gameNameInput) {
+            alert('Please type a game name.');
+            loader.style.display = 'none';
+            return;
+        }
+        
+        const matches = await fetchGameSuggestions(gameNameInput, true);
+        if (!matches || matches.length === 0) {
+            resultDiv.innerHTML = `<div class="status-box behind">No matches found for "${gameNameInput}" on Steam. Check spelling.</div>`;
+            loader.style.display = 'none';
+            return;
+        }
+        
+        // Grab the absolute closest index match automatically
+        appId = matches[0].id;
+        document.getElementById('gameName').value = matches[0].name;
+    }
+
+    if (!appId) {
+        alert('Could not resolve game ID.');
+        loader.style.display = 'none';
+        return;
+    }
+
+    loader.innerText = `Fetching patch data for Game ID: ${appId}...`;
+
     const runFetch = async (useTags) => {
         const tagsParam = useTags ? '&tags=patchnotes' : '';
         const steamUrl = `https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appId}&count=35${tagsParam}`;
         const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(steamUrl)}`;
         
         const res = await fetch(proxyUrl);
-        if (!res.ok) throw new Error('Proxy blocked or offline');
+        if (!res.ok) throw new Error('Network block');
         const wrapper = await res.json();
-        if (!wrapper.contents) throw new Error('Empty response payload');
         return JSON.parse(wrapper.contents);
     };
 
@@ -310,14 +329,13 @@ async function checkPatches() {
         let data = await runFetch(true);
         let newsItems = data.appnews?.newsitems;
 
-        // Logical Safeguard: Fallback if game doesn't explicitly mark logs as "patchnotes"
         if (!newsItems || newsItems.length === 0) {
             data = await runFetch(false);
             newsItems = data.appnews?.newsitems;
         }
 
         if (!newsItems || newsItems.length === 0) {
-            throw new Error('No historical data logs found for this application ID.');
+            throw new Error('No historical data logs found.');
         }
 
         let foundIndex = -1;
@@ -332,18 +350,18 @@ async function checkPatches() {
 
         if (foundIndex === -1) {
             resultDiv.innerHTML = `
-                <div class="status-box behind">Keyword/Build target not found inside recent logs.</div>
+                <div class="status-box behind">Your target version was not found in recent logs.</div>
                 <div class="status-box info-box">
-                    <strong>💡 Why did this happen?</strong><br>
-                    1. The version you entered might be too old (Steam API feeds list the last 35 updates).<br>
-                    2. Your game uses dedicated internal build numbers instead of readable version titles. Try finding a word snippet or version string from that update's text instead.
+                    <strong>Why?</strong><br>
+                    1. The version might be too old (Steam API feeds lists the last 35 updates).<br>
+                    2. The developer changed how they label their updates. Try using a unique word snippet from that version instead.
                 </div>
             `;
             return;
         }
 
         if (foundIndex === 0) {
-            resultDiv.innerHTML = `<div class="status-box current">✨ System Matched! You are running the latest release version.</div>`;
+            resultDiv.innerHTML = `<div class="status-box current">✨ System Matched! You are running the latest version.</div>`;
             return;
         }
 
@@ -375,8 +393,8 @@ async function checkPatches() {
             <div class="status-box behind">Data Connection Failed</div>
             <div class="status-box info-box" style="margin-top:10px;">
                 <strong>🚨 VPN Connection Block Detected:</strong><br>
-                If this stays stuck, your Windscribe VPN configuration is filtering out the public CORS proxy site (allorigins.win). <br><br>
-                <strong>Quick Fix:</strong> Turn off Windscribe for 30 seconds and click "Analyze Patch History" again. If it works without the VPN, apply Option 1 or 2 from the previous instructions to add exceptions!
+                If this stays stuck, Windscribe is blocking the public CORS proxy site (allorigins.win).<br><br>
+                <strong>Quick Fix:</strong> Turn off Windscribe for 30 seconds and click "Analyze Patch History" again.
             </div>
         `;
     } finally {
