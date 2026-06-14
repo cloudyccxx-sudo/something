@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+q<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -125,6 +125,30 @@
 </div>
 
 <script>
+// Logic Failover Handler: Tries primary proxy network, switches to secondary if blocked
+async function requestCORS(url) {
+    // Pipeline 1: CORSProxy.io (High-speed direct proxy)
+    try {
+        const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+        if (res.ok) return await res.json();
+    } catch (e) {
+        console.warn("Primary CORS proxy offline or blocked. Engaging secondary backup layer...");
+    }
+
+    // Pipeline 2: AllOrigins (String-wrapped structural backup)
+    try {
+        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+        if (res.ok) {
+            const wrapper = await res.json();
+            return JSON.parse(wrapper.contents);
+        }
+    } catch (e) {
+        console.error("Secondary backup pipeline failed.");
+    }
+
+    throw new Error("All public data transmission pathways are currently blocked by your local network layout.");
+}
+
 async function fetchPatches() {
     const resultDiv = document.getElementById('result');
     const loader = document.getElementById('loader');
@@ -139,62 +163,53 @@ async function fetchPatches() {
     loader.style.display = 'block';
     loader.innerText = `Searching for "${gameNameInput}"...`;
 
-    // Step 1: Hit Steam Search Engine to find the closest match automatically
-    const searchUrl = `https://steamcommunity.com/actions/SearchApps/${encodeURIComponent(gameNameInput)}`;
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(searchUrl)}`;
-
     try {
-        const searchRes = await fetch(proxyUrl);
-        if (!searchRes.ok) throw new Error('Search failed');
-        const searchWrapper = await searchRes.json();
-        const matches = JSON.parse(searchWrapper.contents);
+        // Step 1: Query Steam database search through the failover proxy handler
+        const searchUrl = `https://steamcommunity.com/actions/SearchApps/${encodeURIComponent(gameNameInput)}`;
+        const matches = await requestCORS(searchUrl);
 
         if (!matches || matches.length === 0) {
             resultDiv.innerHTML = `<div class="status-box">No games matched "${gameNameInput}". Check your spelling and try again.</div>`;
             return;
         }
 
-        // Lock onto the top search index match automatically
         const bestMatch = matches[0];
         const appId = bestMatch.id;
-        document.getElementById('gameName').value = bestMatch.name; // Update text box with exact game title
+        document.getElementById('gameName').value = bestMatch.name; 
 
         loader.innerText = `Found "${bestMatch.name}". Downloading changelogs...`;
 
-        // Step 2: Grab the latest 40 news items for this App ID
-        const fetchNewsPayload = async (useTags) => {
-            const tagsParam = useTags ? '&tags=patchnotes' : '';
-            const steamNewsUrl = `https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appId}&count=40${tagsParam}`;
-            const newsRes = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(steamNewsUrl)}`);
-            const wrapper = await newsRes.json();
-            return JSON.parse(wrapper.contents);
-        };
+        // Step 2: Extract historical patch notes logs
+        let newsData;
+        try {
+            newsData = await requestCORS(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appId}&count=40&tags=patchnotes`);
+        } catch (e) {
+            // Safe fallback if the specific tag endpoint rejects the call
+            newsData = null;
+        }
+        
+        let newsItems = newsData?.appnews?.newsitems;
 
-        let newsData = await fetchNewsPayload(true);
-        let newsItems = newsData.appnews?.newsitems;
-
-        // Fallback: If developers don't use standard patchnotes tag filters, fetch normal community news feed
         if (!newsItems || newsItems.length === 0) {
-            newsData = await fetchNewsPayload(false);
-            newsItems = newsData.appnews?.newsitems;
+            newsData = await requestCORS(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appId}&count=40`);
+            newsItems = newsData?.appnews?.newsitems;
         }
 
         if (!newsItems || newsItems.length === 0) {
             resultDiv.innerHTML = `
                 <div class="status-box info-box">
-                    <strong>Empty Feed:</strong> "${bestMatch.name}" was found, but the developers do not post their text changelogs directly to Steam's built-in news network.
+                    <strong>Empty Feed:</strong> "${bestMatch.name}" was found, but the developers do not post their text changelogs directly to Steam's built-in community news network.
                 </div>
             `;
             return;
         }
 
-        // Step 3: Render the full update layout
+        // Step 3: Parse BBCode layout markers and build display grid
         let htmlOutput = `<h2 class="history-header">Changelog Feed for ${bestMatch.name}</h2>`;
         
         newsItems.forEach(item => {
             const date = new Date(item.date * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
             
-            // Clean out common Steam BBCode syntax patterns
             let cleanBody = item.contents
                 .replace(/\[b\]/g, '<strong>').replace(/\[\/b\]/g, '</strong>')
                 .replace(/\[h1\]/g, '<h3>').replace(/\[\/h1\]/g, '</h3>')
@@ -219,9 +234,10 @@ async function fetchPatches() {
     } catch (err) {
         console.error(err);
         resultDiv.innerHTML = `
-            <div class="status-box">Connection Blocked or Failed</div>
+            <div class="status-box">Network Access Terminated</div>
             <div class="status-box info-box" style="margin-top:10px;">
-                <strong>🚨 VPN Active?</strong> If this request gets stuck indefinitely, Windscribe is blocking the public tracker proxy application domain (allorigins.win). Turn off your VPN profile momentarily to let the page compile!
+                <strong>🚨 Why is this happening?</strong><br>
+                Both global data proxies (`corsproxy.io` and `allorigins.win`) are failing to handle the request. This means your local web browser router configurations or ISP firewalls are actively dropping requests to open cross-origin proxies. 
             </div>
         `;
     } finally {
