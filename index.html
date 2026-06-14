@@ -132,7 +132,6 @@ function logStatus(message, isError = false) {
     loader.innerHTML += `<span style="color: ${color}">${message}</span>\n`;
 }
 
-// Custom Fetch with a strict 5-second cutoff threshold to prevent lingering freezes
 async function fetchWithTimeout(url, timeout = 5000) {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeout);
@@ -141,7 +140,6 @@ async function fetchWithTimeout(url, timeout = 5000) {
     return response;
 }
 
-// Master Request router that cycles through 3 unique network wrappers
 async function fetchFromProxies(targetUrl) {
     // Pipeline Option 1: CORSProxy.io
     try {
@@ -215,7 +213,14 @@ async function fetchPatches() {
         }
 
         const bestMatch = matches[0];
-        const appId = bestMatch.id;
+        
+        // FIX: Extract "appid" or fallback to "id" to guarantee variable validation
+        const appId = bestMatch.appid || bestMatch.id; 
+        
+        if (!appId) {
+            throw new Error("The target matching entry was structural but lacked a valid App ID mapping key.");
+        }
+
         document.getElementById('gameName').value = bestMatch.name; 
         
         logStatus(`🎯 Matched target title: "${bestMatch.name}" (ID: ${appId})`);
@@ -269,7 +274,7 @@ async function fetchPatches() {
         });
 
         resultDiv.innerHTML = htmlOutput;
-        loader.style.display = 'none'; // Clear system log block if compile finishes smoothly
+        loader.style.display = 'none'; 
 
     } catch (err) {
         logStatus(`🚨 CRITICAL EXCEPTION: ${err.message}`, true);
@@ -277,7 +282,7 @@ async function fetchPatches() {
             <div class="status-box">Network Handshake Refused</div>
             <div class="status-box info-box" style="margin-top:10px;">
                 <strong>Why did this drop?</strong><br>
-                Look closely at the live diagnostics log window above. If all three alternative pipelines throw a failure/timeout message, your browser configuration, router firewall, or ISP routing infrastructure is aggressively blocking third-party cross-origin resource sharing proxies.
+                Look closely at the live diagnostics log window above. The properties are parsing correctly now, but if the servers return a 403 or 400 error code, it means Steam is actively rejecting the automated third-party request structure from that proxy.
             </div>
         `;
     }
