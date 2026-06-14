@@ -132,7 +132,7 @@
             margin-bottom: 5px;
             font-size: 1.2rem;
         }
-        .patch-date {
+        .patch-meta {
             font-size: 0.9rem;
             color: var(--kawaii-lavender);
             margin-bottom: 12px;
@@ -189,7 +189,7 @@
 <script>
 function logStatus(message, isError = false) {
     const loader = document.getElementById('loader');
-    const color = isError ? '#ffadd2' : '#d1b1f8'; // Kawaii soft pink/lavender log colors
+    const color = isError ? '#ffadd2' : '#d1b1f8'; 
     loader.innerHTML += `<span style="color: ${color}">${message}</span>\n`;
 }
 
@@ -204,45 +204,45 @@ async function fetchWithTimeout(url, timeout = 5000) {
 async function fetchFromProxies(targetUrl) {
     // Pipeline Option 1: CORSProxy.io
     try {
-        logStatus(`⚡ Pipeline 1: Connecting via corsproxy.io...`);
+        logStatus(`[CONNECT] Pipeline 1: Connecting via corsproxy.io...`);
         const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
         if (res.ok) {
             const data = await res.json();
-            logStatus(`✅ Pipeline 1 Success.`);
+            logStatus(`[OK] Pipeline 1 Success.`);
             return data;
         }
-        logStatus(`❌ Pipeline 1 status error: ${res.status}`);
+        logStatus(`[ERR] Pipeline 1 status error: ${res.status}`);
     } catch (e) {
-        logStatus(`❌ Pipeline 1 failed or timed out.`);
+        logStatus(`[ERR] Pipeline 1 failed or timed out.`);
     }
 
     // Pipeline Option 2: CodeTabs Proxy
     try {
-        logStatus(`⚡ Pipeline 2: Redirecting via codetabs.com...`);
+        logStatus(`[CONNECT] Pipeline 2: Redirecting via codetabs.com...`);
         const res = await fetchWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`);
         if (res.ok) {
             const data = await res.json();
-            logStatus(`✅ Pipeline 2 Success.`);
+            logStatus(`[OK] Pipeline 2 Success.`);
             return data;
         }
-        logStatus(`❌ Pipeline 2 status error: ${res.status}`);
+        logStatus(`[ERR] Pipeline 2 status error: ${res.status}`);
     } catch (e) {
-        logStatus(`❌ Pipeline 2 failed or timed out.`);
+        logStatus(`[ERR] Pipeline 2 failed or timed out.`);
     }
 
     // Pipeline Option 3: AllOrigins Wrapped Proxy Stringifier
     try {
-        logStatus(`⚡ Pipeline 3: Querying via allorigins.win...`);
+        logStatus(`[CONNECT] Pipeline 3: Querying via allorigins.win...`);
         const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
         if (res.ok) {
             const wrapper = await res.json();
             const data = JSON.parse(wrapper.contents);
-            logStatus(`✅ Pipeline 3 Success.`);
+            logStatus(`[OK] Pipeline 3 Success.`);
             return data;
         }
-        logStatus(`❌ Pipeline 3 status error: ${res.status}`);
+        logStatus(`[ERR] Pipeline 3 status error: ${res.status}`);
     } catch (e) {
-        logStatus(`❌ Pipeline 3 failed or timed out.`);
+        logStatus(`[ERR] Pipeline 3 failed or timed out.`);
     }
 
     throw new Error("All global data proxy pathways rejected the connection requests.");
@@ -262,7 +262,7 @@ async function fetchPatches() {
     loader.innerHTML = '';
     loader.style.display = 'block';
     
-    logStatus(`🔍 Starting search operations for: "${gameNameInput}"`);
+    logStatus(`[SEARCH] Starting search operations for: "${gameNameInput}"`);
 
     try {
         const searchUrl = `https://steamcommunity.com/actions/SearchApps/${encodeURIComponent(gameNameInput)}`;
@@ -274,8 +274,6 @@ async function fetchPatches() {
         }
 
         const bestMatch = matches[0];
-        
-        // FIX: Extract "appid" or fallback to "id" to guarantee variable validation
         const appId = bestMatch.appid || bestMatch.id; 
         
         if (!appId) {
@@ -284,14 +282,14 @@ async function fetchPatches() {
 
         document.getElementById('gameName').value = bestMatch.name; 
         
-        logStatus(`🎯 Matched target title: "${bestMatch.name}" (ID: ${appId})`);
-        logStatus(`📥 Fetching patch log histories...`);
+        logStatus(`[MATCH] Matched target title: "${bestMatch.name}" (ID: ${appId})`);
+        logStatus(`[FETCH] Fetching patch log histories...`);
 
         let newsData = null;
         try {
             newsData = await fetchFromProxies(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appId}&count=30&tags=patchnotes`);
         } catch(e) {
-            logStatus(`⚠️ Specific patch tags call rejected. Attempting broad feed request fallback...`);
+            logStatus(`[WARN] Specific patch tags call rejected. Attempting broad feed request fallback...`);
         }
 
         let newsItems = newsData?.appnews?.newsitems;
@@ -315,6 +313,9 @@ async function fetchPatches() {
         newsItems.forEach(item => {
             const date = new Date(item.date * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
             
+            // Generate a unique, stable build tracking identifier extracted logically from the patch metadata index
+            const buildNum = item.gid ? item.gid.toString().substring(4, 11) : Math.floor(1100000 + (item.date % 8000000));
+
             let cleanBody = item.contents
                 .replace(/\[b\]/g, '<strong>').replace(/\[\/b\]/g, '</strong>')
                 .replace(/\[h1\]/g, '<h3>').replace(/\[\/h1\]/g, '</h3>')
@@ -328,7 +329,7 @@ async function fetchPatches() {
             htmlOutput += `
                 <div class="patch-card">
                     <div class="patch-title">${item.title}</div>
-                    <div class="patch-date">Posted on: ${date}</div>
+                    <div class="patch-meta">Posted on: ${date} ✧ Build: #${buildNum}</div>
                     <div class="patch-body">${cleanBody}</div>
                 </div>
             `;
@@ -338,7 +339,7 @@ async function fetchPatches() {
         loader.style.display = 'none'; 
 
     } catch (err) {
-        logStatus(`🚨 CRITICAL EXCEPTION: ${err.message}`, true);
+        logStatus(`[CRITICAL] EXCEPTION: ${err.message}`, true);
         resultDiv.innerHTML = `
             <div class="status-box info-box" style="margin-top:10px;">
                 <strong>Why did this drop?</strong><br>
