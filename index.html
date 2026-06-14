@@ -1,337 +1,149 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="kawaii">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Steam Patch History Viewer - Theme Edition</title>
-    <link href="https://fonts.googleapis.com/css2?family=Pangolin&family=Patrick+Hand&display=swap" rel="stylesheet">
+    <title>System Patch Log</title>
     <style>
-        /* Theme Architecture Configurations */
-        html[data-theme="kawaii"] {
-            --bg-main: #f8f4ff;
-            --bg-gradient: linear-gradient(135deg, #f8f4ff 25%, #f2ebff 25%, #f2ebff 50%, #f8f4ff 50%, #f8f4ff 75%, #f2ebff 75%, #f2ebff 100%);
-            --bg-size: 56.57px 56.57px;
-            --container-bg: rgba(255, 255, 255, 0.9);
-            --border-color: #c4ace8;
-            --violet-accent: #9b51e0;
-            --lavender-sub: #d1b1f8;
-            --text-main: #5f3e7e;
-            --card-bg: rgba(255, 255, 255, 0.8);
-            --patch-body-bg: rgba(209, 177, 248, 0.1);
-            --loader-bg: #2a1c4c;
-            --loader-text: #d1b1f8;
-            --loader-border: #9b51e0;
-            --danger-bg: rgba(224, 112, 112, 0.15);
-            --danger-text: #e07070;
-            --shadow-color: rgba(182, 110, 239, 0.2);
-        }
-
-        html[data-theme="lilith"] {
-            --bg-main: #0b0712;
-            --bg-gradient: linear-gradient(135deg, #0b0712 25%, #140d21 25%, #140d21 50%, #0b0712 50%, #0b0712 75%, #140d21 75%, #140d21 100%);
-            --bg-size: 40px 40px;
-            --container-bg: rgba(18, 11, 28, 0.95);
-            --border-color: #ff2a6d;
-            --violet-accent: #ff2a6d; /* Neon Crimson */
-            --lavender-sub: #8a2be2; /* Deep Neon Violet */
-            --text-main: #e2daf0;
-            --card-bg: rgba(28, 18, 43, 0.9);
-            --patch-body-bg: rgba(11, 7, 18, 0.6);
-            --loader-bg: #09050f;
-            --loader-text: #ff2a6d;
-            --loader-border: #8a2be2;
-            --danger-bg: rgba(255, 42, 109, 0.1);
-            --danger-text: #ff2a6d;
-            --shadow-color: rgba(255, 42, 109, 0.3);
+        :root {
+            --bg-color: #0a0a0a;
+            --text-color: #e0e0e0;
+            --accent-red: #ff3e3e;
+            --border-color: #444;
+            --panel-bg: rgba(15, 15, 15, 0.85);
+            --danger-bg: rgba(60, 0, 0, 0.7);
         }
 
         body {
-            font-family: 'Patrick Hand', cursive;
-            background-color: var(--bg-main);
-            background-image: var(--bg-gradient);
-            background-size: var(--bg-size);
-            color: var(--text-main);
             margin: 0;
             padding: 20px;
-            transition: background 0.3s ease;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: var(--container-bg);
-            padding: 30px;
-            border-radius: 25px;
-            box-shadow: 0 8px 25px var(--shadow-color);
-            border: 4px solid var(--border-color);
-            position: relative;
-            transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
-        }
-        
-        /* Vector Settings Button Layout Anchor */
-        .settings-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 36px;
-            height: 36px;
-            cursor: pointer;
-            fill: var(--violet-accent);
-            transition: transform 0.4s ease, fill 0.3s ease;
-        }
-        .settings-btn:hover {
-            transform: rotate(90deg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            background-image: url('1000008139.webp');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            color: var(--text-color);
         }
 
-        h1, h2, h3 {
-            font-family: 'Pangolin', cursive;
-            text-align: center;
-            color: var(--violet-accent);
-            margin-top: 0;
-            text-shadow: 1px 1px 1px rgba(255,255,255,0.5);
-            transition: color 0.3s;
-        }
-        h1 { font-size: 2.2rem; padding-right: 40px; }
-        .subtitle {
-            text-align: center;
-            font-size: 1.1rem;
-            color: var(--lavender-sub);
-            margin-bottom: 25px;
-            font-weight: bold;
-            transition: color 0.3s;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 16px;
-            box-sizing: border-box;
-            background-color: var(--card-bg);
-            border: 3px solid var(--border-color);
-            border-radius: 15px;
-            color: var(--text-main);
-            font-size: 1.1rem;
-            text-align: center;
-            margin-bottom: 20px;
-            font-family: 'Patrick Hand', cursive;
-            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.3s, color 0.3s;
-        }
-        input:focus {
-            outline: none;
-            border-color: var(--violet-accent);
-            box-shadow: 0 0 10px var(--lavender-sub);
-        }
-        .search-btn {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, var(--lavender-sub), var(--violet-accent));
-            border: 3px solid var(--violet-accent);
-            border-radius: 15px;
-            color: white;
-            font-size: 1.2rem;
-            font-weight: bold;
-            cursor: pointer;
-            font-family: 'Pangolin', cursive;
-            text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
-            box-shadow: 0 4px 10px var(--shadow-color);
-            transition: transform 0.1s, box-shadow 0.2s, border-color 0.3s;
-        }
-        .search-btn:hover {
-            box-shadow: 0 6px 15px var(--shadow-color);
-            transform: translateY(-2px);
-        }
-        .search-btn:active { transform: translateY(1px); }
-        
-        .status-box {
-            padding: 18px;
-            border-radius: 15px;
-            margin-top: 25px;
-            text-align: left;
-            font-weight: bold;
-            background-color: var(--danger-bg); 
-            border: 3px solid var(--border-color); 
-            color: var(--danger-text);
-            font-family: 'Pangolin', cursive;
-        }
-        .info-box { 
-            background-color: var(--patch-body-bg); 
-            border: 3px solid var(--lavender-sub); 
-            color: var(--text-main); 
-            font-size: 1rem; 
-            font-weight: normal; 
-            line-height: 1.5;
-            font-family: 'Patrick Hand', cursive;
-        }
-        .patch-card {
-            background-color: var(--card-bg);
-            border-left: 6px solid var(--violet-accent);
-            padding: 18px;
-            margin-top: 20px;
-            border-radius: 10px 20px 20px 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            transition: transform 0.2s, background-color 0.3s;
-        }
-        .patch-card:hover {
-            transform: scale(1.02);
-        }
-        .patch-title {
-            font-family: 'Pangolin', cursive;
-            font-weight: bold;
-            color: var(--violet-accent);
-            margin-bottom: 5px;
-            font-size: 1.2rem;
-        }
-        .patch-meta {
-            font-size: 0.9rem;
-            color: var(--lavender-sub);
-            margin-bottom: 12px;
-            font-weight: bold;
-        }
-        .patch-body {
-            font-size: 1rem;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            max-height: 250px;
-            overflow-y: auto;
-            background: var(--patch-body-bg);
-            padding: 14px;
-            border-radius: 10px;
-            line-height: 1.4;
-            color: var(--text-main);
-        }
-        .loader { 
-            text-align: left; 
-            color: var(--loader-text); 
-            display: none; 
-            margin-top: 20px; 
-            font-family: monospace;
-            background: var(--loader-bg);
-            padding: 14px;
-            border-radius: 10px;
-            border: 3px solid var(--loader-border);
-            font-size: 0.9rem;
-            white-space: pre-line;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
-        }
-        h2.history-header {
-            border-bottom: 3px dashed var(--lavender-sub);
-            padding-bottom: 10px;
-            color: var(--violet-accent);
-            margin-top: 30px;
-            margin-bottom: 15px;
-        }
-
-        /* Centered Overlay Window Management CSS */
-        .modal-backdrop {
-            display: none;
+        /* Darkening overlay to make text readable */
+        body::before {
+            content: '';
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
-            z-index: 999;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: -1;
         }
-        .modal-window {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: var(--container-bg);
-            border: 4px solid var(--border-color);
-            border-radius: 20px;
-            padding: 25px;
-            width: 280px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-            z-index: 1000;
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: var(--panel-bg);
+            padding: 30px;
+            border: 2px solid var(--accent-red);
+            box-shadow: 0 0 15px rgba(255, 62, 62, 0.3);
+        }
+
+        h1, h2 {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent-red);
             text-align: center;
+            border-bottom: 2px solid var(--accent-red);
+            padding-bottom: 10px;
         }
-        .theme-option-btn {
+
+        input[type="text"] {
             width: 100%;
             padding: 12px;
-            margin: 10px 0;
-            font-family: 'Pangolin', cursive;
-            font-size: 1.1rem;
-            border: 3px solid var(--border-color);
-            border-radius: 12px;
-            cursor: pointer;
-            background-color: var(--card-bg);
-            color: var(--text-main);
-            font-weight: bold;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        .theme-option-btn:hover {
-            background-color: var(--lavender-sub);
+            background: #000;
+            border: 1px solid var(--border-color);
             color: white;
-            transform: scale(1.03);
+            box-sizing: border-box;
+            margin-bottom: 15px;
+            font-size: 1rem;
         }
-        .close-modal-btn {
-            margin-top: 15px;
-            background: none;
-            border: none;
-            color: var(--violet-accent);
-            font-family: 'Patrick Hand', cursive;
-            font-size: 1.1rem;
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent-red);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
             font-weight: bold;
             cursor: pointer;
-            text-decoration: underline;
+            text-transform: uppercase;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .patch-card {
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .patch-title {
+            color: var(--accent-red);
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .patch-meta {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .patch-body {
+            font-size: 0.95rem;
+            line-height: 1.4;
+            max-height: 200px;
+            overflow-y: auto;
+            border-top: 1px solid #333;
+            padding-top: 10px;
+        }
+
+        .loader {
+            margin-top: 20px;
+            font-family: monospace;
+            background: #000;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            display: none;
+            font-size: 0.85rem;
+            white-space: pre-line;
+            color: #aaa;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <svg class="settings-btn" viewBox="0 0 24 24" onclick="toggleSettings(true)" aria-label="Settings Menu">
-        <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
-    </svg>
-
-    <h1>Steam Patch History</h1>
-    <div class="subtitle">Enter any game name to view its update history wall</div>
-
-    <input type="text" id="gameName" placeholder="e.g., Terraria or Elden Ring" autocomplete="off">
-    <button class="search-btn" onclick="fetchPatches()">View All Patches</button>
+    <h1>Database Query</h1>
+    <input type="text" id="gameName" placeholder="Enter target application ID or name..." autocomplete="off">
+    <button onclick="fetchPatches()">Retrieve Logs</button>
 
     <div id="loader" class="loader"></div>
     <div id="result"></div>
 </div>
 
-<div id="settingsBackdrop" class="modal-backdrop" onclick="toggleSettings(false)">
-    <div class="modal-window" onclick="event.stopPropagation()">
-        <h3>Select Theme Profile</h3>
-        <button class="theme-option-btn" onclick="applyTheme('kawaii')">Kawaii Purple</button>
-        <button class="theme-option-btn" onclick="applyTheme('lilith')">Lilith Gothic</button>
-        <br>
-        <button class="close-modal-btn" onclick="toggleSettings(false)">Close Panel</button>
-    </div>
-</div>
-
 <script>
-// Handle local persistence of user configuration profiles smoothly on boot
-const savedTheme = localStorage.getItem('steam-watcher-theme') || 'kawaii';
-document.documentElement.setAttribute('data-theme', savedTheme);
-
-function toggleSettings(open) {
-    document.getElementById('settingsBackdrop').style.display = open ? 'block' : 'none';
-}
-
-function applyTheme(themeName) {
-    document.documentElement.setAttribute('data-theme', themeName);
-    localStorage.setItem('steam-watcher-theme', themeName);
-    toggleSettings(false);
-}
-
-function logStatus(message, isError = false) {
-    const loader = document.getElementById('loader');
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    
-    let color = '#d1b1f8'; 
-    if (isError) {
-        color = '#ffadd2'; 
-    } else if (currentTheme === 'lilith') {
-        color = '#ff2a6d'; 
-    }
-    
-    loader.innerHTML += `<span style="color: ${color}">${message}</span>\n`;
-}
-
 async function fetchWithTimeout(url, timeout = 5000) {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeout);
@@ -340,146 +152,87 @@ async function fetchWithTimeout(url, timeout = 5000) {
     return response;
 }
 
+function logStatus(msg) {
+    const loader = document.getElementById('loader');
+    loader.style.display = 'block';
+    loader.innerHTML += `> ${msg}\n`;
+}
+
 async function fetchFromProxies(targetUrl) {
-    try {
-        logStatus(`[CONNECT] Pipeline 1: Connecting via corsproxy.io...`);
-        const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
-        if (res.ok) {
-            const data = await res.json();
-            logStatus(`[OK] Pipeline 1 Success.`);
-            return data;
-        }
-        logStatus(`[ERR] Pipeline 1 status error: ${res.status}`);
-    } catch (e) {
-        logStatus(`[ERR] Pipeline 1 failed or timed out.`);
-    }
+    const proxies = [
+        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
+        `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`
+    ];
 
-    try {
-        logStatus(`[CONNECT] Pipeline 2: Redirecting via codetabs.com...`);
-        const res = await fetchWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`);
-        if (res.ok) {
-            const data = await res.json();
-            logStatus(`[OK] Pipeline 2 Success.`);
-            return data;
+    for (const url of proxies) {
+        try {
+            logStatus(`Connecting to node...`);
+            const res = await fetchWithTimeout(url);
+            if (res.ok) {
+                if (url.includes('allorigins')) {
+                    const wrapper = await res.json();
+                    return JSON.parse(wrapper.contents);
+                }
+                return await res.json();
+            }
+        } catch (e) {
+            continue;
         }
-        logStatus(`[ERR] Pipeline 2 status error: ${res.status}`);
-    } catch (e) {
-        logStatus(`[ERR] Pipeline 2 failed or timed out.`);
     }
-
-    try {
-        logStatus(`[CONNECT] Pipeline 3: Querying via allorigins.win...`);
-        const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
-        if (res.ok) {
-            const wrapper = await res.json();
-            const data = JSON.parse(wrapper.contents);
-            logStatus(`[OK] Pipeline 3 Success.`);
-            return data;
-        }
-        logStatus(`[ERR] Pipeline 3 status error: ${res.status}`);
-    } catch (e) {
-        logStatus(`[ERR] Pipeline 3 failed or timed out.`);
-    }
-
-    throw new Error("All global data proxy pathways rejected the connection requests.");
+    throw new Error("All data nodes failed.");
 }
 
 async function fetchPatches() {
     const resultDiv = document.getElementById('result');
     const loader = document.getElementById('loader');
-    const gameNameInput = document.getElementById('gameName').value.trim();
+    const gameName = document.getElementById('gameName').value.trim();
     
-    if (!gameNameInput) {
-        alert('Please enter a game name.');
-        return;
-    }
+    if (!gameName) return;
 
     resultDiv.innerHTML = '';
     loader.innerHTML = '';
-    loader.style.display = 'block';
     
-    logStatus(`[SEARCH] Starting search operations for: "${gameNameInput}"`);
-
     try {
-        const searchUrl = `https://steamcommunity.com/actions/SearchApps/${encodeURIComponent(gameNameInput)}`;
-        const matches = await fetchFromProxies(searchUrl);
-
-        if (!matches || matches.length === 0 || !Array.isArray(matches)) {
-            resultDiv.innerHTML = `<div class="status-box info-box">No explicit game titles matched "${gameNameInput}" inside the Steam directory database.</div>`;
+        logStatus(`Searching for: ${gameName}`);
+        const matches = await fetchFromProxies(`https://steamcommunity.com/actions/SearchApps/${encodeURIComponent(gameName)}`);
+        
+        if (!matches || matches.length === 0) {
+            resultDiv.innerHTML = `<div class="patch-card">Target not found in directory.</div>`;
             return;
         }
 
-        const bestMatch = matches[0];
-        const appId = bestMatch.appid || bestMatch.id; 
+        const appId = matches[0].appid || matches[0].id;
+        logStatus(`Target locked. ID: ${appId}`);
         
-        if (!appId) {
-            throw new Error("The target matching entry was structural but lacked a valid App ID mapping key.");
-        }
+        const newsData = await fetchFromProxies(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appId}&count=10`);
+        const items = newsData?.appnews?.newsitems || [];
 
-        document.getElementById('gameName').value = bestMatch.name; 
-        
-        logStatus(`[MATCH] Matched target title: "${bestMatch.name}" (ID: ${appId})`);
-        logStatus(`[FETCH] Fetching patch log histories...`);
-
-        let newsData = null;
-        try {
-            newsData = await fetchFromProxies(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appId}&count=30&tags=patchnotes`);
-        } catch(e) {
-            logStatus(`[WARN] Specific patch tags call rejected. Attempting broad feed request fallback...`);
-        }
-
-        let newsItems = newsData?.appnews?.newsitems;
-
-        if (!newsItems || newsItems.length === 0) {
-            newsData = await fetchFromProxies(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appId}&count=30`);
-            newsItems = newsData?.appnews?.newsitems;
-        }
-
-        if (!newsItems || newsItems.length === 0) {
-            resultDiv.innerHTML = `
-                <div class="status-box info-box">
-                    <strong>Empty System Feed:</strong> "${bestMatch.name}" was successfully verified, but the game developers do not broadcast text announcements into Steam's community RSS hub structure.
-                </div>
-            `;
+        if (items.length === 0) {
+            resultDiv.innerHTML = `<div class="patch-card">No logs retrieved.</div>`;
             return;
         }
 
-        let htmlOutput = `<h2 class="history-header">Changelog Feed for ${bestMatch.name}</h2>`;
-        
-        newsItems.forEach(item => {
-            const date = new Date(item.date * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-            const buildNum = item.gid ? item.gid.toString().substring(4, 11) : Math.floor(1100000 + (item.date % 8000000));
+        items.forEach(item => {
+            const date = new Date(item.date * 1000).toLocaleDateString();
+            const buildNum = item.gid ? item.gid.toString().substring(4, 11) : "N/A";
+            
+            let content = item.contents
+                .replace(/\[.*?\]/g, '')
+                .replace(/\n/g, '<br>');
 
-            let cleanBody = item.contents
-                .replace(/\[b\]/g, '<strong>').replace(/\[\/b\]/g, '</strong>')
-                .replace(/\[h1\]/g, '<h3>').replace(/\[\/h1\]/g, '</h3>')
-                .replace(/\[h2\]/g, '<h4>').replace(/\[\/h2\]/g, '</h4>')
-                .replace(/\[list\]/g, '<ul>').replace(/\[\/list\]/g, '</ul>')
-                .replace(/\[\*\]/g, '<li>')
-                .replace(/\[img\].*?\[\/img\]/g, '') 
-                .replace(/\[url=.*?\]/g, '').replace(/\[\/url\]/g, '')
-                .replace(/\[\/?\w+.*?\]/g, ''); 
-
-            htmlOutput += `
+            resultDiv.innerHTML += `
                 <div class="patch-card">
                     <div class="patch-title">${item.title}</div>
-                    <div class="patch-meta">Posted on: ${date} | Build: #${buildNum}</div>
-                    <div class="patch-body">${cleanBody}</div>
+                    <div class="patch-meta">Date: ${date} | Build: ${buildNum}</div>
+                    <div class="patch-body">${content}</div>
                 </div>
             `;
         });
-
-        resultDiv.innerHTML = htmlOutput;
-        loader.style.display = 'none'; 
+        loader.style.display = 'none';
 
     } catch (err) {
-        logStatus(`[CRITICAL] EXCEPTION: ${err.message}`, true);
-        resultDiv.innerHTML = `
-            <div class="status-box info-box" style="margin-top:10px;">
-                <strong>Why did this drop?</strong><br>
-                Look closely at the live diagnostics log window above. The properties are parsing correctly now, but if the servers return a 403 or 400 error code, it means Steam is actively rejecting the automated third-party request structure from that proxy.
-            </div>
-        `;
+        logStatus(`CRITICAL_FAILURE: ${err.message}`);
     }
 }
 </script>
